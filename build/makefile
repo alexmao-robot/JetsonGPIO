@@ -20,11 +20,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-AR = ar
-RANLIB = ranlib
+CC      := g++
+AR 		= ar
+RANLIB 	= ranlib
 
 LIB_NAME = JetsonGPIO
 LIB_FULL_NAME = lib$(LIB_NAME).a
+DYLIB_FULL_NAME = lib$(LIB_NAME).so
 
 SRC_DIR = ../src
 INCLUDE_DIR = ../include
@@ -42,21 +44,23 @@ ifeq ($(PREFIX),)
 	PREFIX := /usr/local
 endif
 
+
 all : $(LIB_OBJS)
 	$(AR) rcv $(LIB_FULL_NAME) $(LIB_OBJS)
 	$(RANLIB) $(LIB_FULL_NAME)
-
+	g++ -shared $(LIB_FULL_NAME) -L. -o $(DYLIB_FULL_NAME)
+ 
 $(LIB_NAME).o : $(SRC_DIR)/$(LIB_NAME).cpp $(LIB_HEADERS)
-	g++ $(INCLUDE_FLAG) -c -o $@ $(SRC_DIR)/$(LIB_NAME).cpp
-
-PythonFunctions.o :  $(SRC_DIR)/PythonFunctions.cpp $(INCLUDE_DIR)/private/PythonFunctions.h
-	g++ $(INCLUDE_FLAG) -c -o $@ $(SRC_DIR)/PythonFunctions.cpp
+	$(CC) $(INCLUDE_FLAG) -c -o $@ $(SRC_DIR)/$(LIB_NAME).cpp
 
 gpio_pin_data.o : $(SRC_DIR)/gpio_pin_data.cpp $(LIB_HEADERS)
-	g++ $(INCLUDE_FLAG) -c -o $@ $(SRC_DIR)/gpio_pin_data.cpp
+	$(CC) $(INCLUDE_FLAG) -c -o $@ $(SRC_DIR)/gpio_pin_data.cpp
 
 gpio_event.o : $(SRC_DIR)/gpio_event.cpp $(LIB_HEADERS)
-	g++ $(INCLUDE_FLAG) -I -lpthread -c -o $@ $(SRC_DIR)/gpio_event.cpp
+	$(CC) $(INCLUDE_FLAG) -I -lpthread -c -o $@ $(SRC_DIR)/gpio_event.cpp
+	
+PythonFunctions.o : $(SRC_DIR)/PythonFunctions.cpp $(LIB_HEADERS)
+	$(CC) $(INCLUDE_FLAG) -I -lpthread -c -o $@ $(SRC_DIR)/PythonFunctions.cpp
 
 install : $(LIB_FULL_NAME)
 	install -m 644 $(LIB_FULL_NAME) $(PREFIX)/lib/
@@ -67,9 +71,10 @@ uninstall :
 	rm -rf $(PREFIX)/include/$(LIB_NAME).h
 
 test : $(SRC_DIR)/$(TEST_SRC)
-	g++ -o $@ $(SRC_DIR)/$(TEST_SRC) $(LIBS_FLAG) -lpthread
+	$(CC) -o $@ $(SRC_DIR)/$(TEST_SRC) $(LIBS_FLAG) -lpthread
 
 clean :
 	rm -rf  *.o
 	rm -rf  *.a
+	rm -rf  *.so
 
